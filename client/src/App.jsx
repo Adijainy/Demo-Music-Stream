@@ -15,6 +15,12 @@ function App() {
     };
   });
 
+  //socket events
+  const playSong = (songUrl) => {
+    console.log("Inside playSong")
+    socket.emit("playSong", songUrl);
+  }
+
   //state variables
   const [searchQuery, setSearchQuery] = useState("");
   const [trackList, setTrackList] = useState([]);
@@ -30,7 +36,6 @@ function App() {
       },
       null
     );
-
     
     setTrackList(res.data.tracks);
     return res;
@@ -43,8 +48,9 @@ function App() {
       'X-RapidAPI-Key': 'd56b1f2effmsh5f29610e2682c33p126cd8jsn6d4e17a18aa7',
       'X-RapidAPI-Host': 'spotify81.p.rapidapi.com'
     });
-    console.log(trackList)
-    console.log("Song download" ,res.data[0].url);
+    console.log("Before event emit")
+    playSong(res.data[0].url);
+    console.log("After event emit")
   }
   
 
