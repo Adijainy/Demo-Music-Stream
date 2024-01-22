@@ -31,12 +31,22 @@ function App() {
       null
     );
 
-    console.log(res);
+    
     setTrackList(res.data.tracks);
     return res;
   };
 
-  console.log(trackList);
+
+
+  const getSong = async(id) => {
+    const res = await apiConnector('GET', `https://spotify81.p.rapidapi.com/download_track?q=${id}&onlyLinks=1`, null, {
+      'X-RapidAPI-Key': 'd56b1f2effmsh5f29610e2682c33p126cd8jsn6d4e17a18aa7',
+      'X-RapidAPI-Host': 'spotify81.p.rapidapi.com'
+    });
+    console.log(trackList)
+    console.log("Song download" ,res.data[0].url);
+  }
+  
 
   return (
     <>
@@ -53,10 +63,13 @@ function App() {
           <h6>Search results</h6>
           <ul>
             {trackList.map((item, ind) => (
-              <li key={ind}>
-                <img src={item.data.albumOfTrack.coverArt.sources[0].url} />
-                {item.data.albumOfTrack.name}{" "}
-              </li>
+              
+                <li key={ind} onClick={() => getSong(item.data.id)}>
+                  <img src={item.data.albumOfTrack.coverArt.sources[0].url} />
+                  {item.data.albumOfTrack.name}{" "}
+                </li>
+              
+              
             ))}
           </ul>
         </div>
