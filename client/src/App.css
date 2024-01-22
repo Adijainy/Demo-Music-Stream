@@ -5,6 +5,26 @@
   text-align: center;
 }
 
+.searchdiv {
+  text-align: left;
+  padding: 1rem;
+}
+
+ul {
+  list-style: none;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+img {
+  width: 3rem;
+  margin-right: 1rem;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
