@@ -1,8 +1,10 @@
 const express = require("express");
-const ss = require("socket.io-stream");
+const { Transform } = require("stream");
 const axios = require("axios");
+const Lame = require("node-lame").Lame;
+
 const app = express();
-const CHUNK_SIZE = 4096; // Adjust as needed
+const CHUNK_SIZE = 17096; // Adjust as needed
 const server = require("http").createServer(app);
 server.listen(3000, () => {
   console.log("Server listening on port 3000");
@@ -16,48 +18,73 @@ const io = require("socket.io")(server, {
 
 //socket connections
 io.on("connection", (socket) => {
-  const stream = ss.createStream();
   console.log("Client connected : " + socket.id);
-  socket.on("playSong", (audioURL) => {
-    console.log("Playing song : " + audioURL);
-    fetchAndStream(audioURL, stream);
+  socket.on('playSong', (songUrl) => {
+    console.log("Playing song : " + songUrl);
+    //downloadAndEncode(songUrl);
+    downloadAndStream(songUrl);
   });
 });
 
-async function fetchAndStream(audioUrl, stream) {
+
+const downloadAndEncode = async (url) => {
   try {
-    const response = await axios.get(audioUrl, { responseType: "stream" }); // Specify stream response type
+    const response = await axios.get(url, { responseType: "stream" });
+    const readableStream = response.data;
+  
+    const encoder = new Lame({ // Encode input to MP3
+      bitDepth: 16, // Adjust encoding parameters as needed
+      sampleRate: 44100,
+      channels: 2,
+    }).setFile("./output.mp3");
 
-    if (response.status === 200) {
-      response.data
-        .pipe(chunkAudio(CHUNK_SIZE)) // pipe stream directly
-        .on("data", (chunk) => {
-          const timestamp = audioContext.currentTime; // Use server-side audio context for timestamps
-          stream.emit("songChunk", chunk, timestamp); // Emitting chunk and timestamp on event "songchunk"
-        })
-        .pipe(stream);
-    } else {
-      console.error(`Error fetching audio: ${response.status}`);
-      io.emit("error", `Error fetching audio`);
-    }
+    const writableStream = readableStream.pipe(encoder);
+
+    writableStream.on("data", (chunk) => {
+      const timestamp = Date.now(); // Use server-side timestamp
+      //io.emitTo("lobby", "songChunk", chunk, timestamp);
+      console.log("Sent chunk at timestamp", timestamp);
+    });
+
+    writableStream.on("finish", () => {
+      console.log("Audio encoding finished");
+    });
   } catch (error) {
-    console.error(error);
-    io.emit("error", error);
+    console.error("Error downloading or encoding audio:", error);
+    // Handle errors appropriately
   }
-}
+};
 
-//chunk audio function
-function chunkAudio(chunkSize) {
-  return new TransformStream({
-    transform(chunk, controller) {
-      const chunks = [];
-      let remaining = chunk;
-      while (remaining.length > chunkSize) {
-        chunks.push(remaining.slice(0, chunkSize));
-        remaining = remaining.slice(chunkSize);
-      }
-      chunks.push(remaining);
-      chunks.forEach((chunk) => controller.push(chunk));
-    },
-  });
-}
+
+
+const downloadAndStream = async (url) => {
+  try {
+    const response = await axios.get(url, { responseType: "stream" });
+    const readableStream = response.data;
+
+    const writableStream = new Transform({
+      transform(chunk, encoding, callback) {
+        const chunks = [];
+        let remaining = chunk;
+        while (remaining.length > CHUNK_SIZE) {
+          chunks.push(remaining.slice(0, CHUNK_SIZE));
+          remaining = remaining.slice(CHUNK_SIZE);
+        }
+        chunks.push(remaining);
+        chunks.forEach((chunk) => callback(null, chunk));
+      },
+    });
+
+    readableStream.pipe(writableStream);
+
+    writableStream.on("data", (chunk) => {
+      //const timestamp = audioContext.currentTime; // Assuming you have an AudioContext for synchronization
+      //io.emitTo("lobby", "songChunk", chunk, timestamp);
+      //io.emit('songChunk', chunk);
+      console.log("Sent chunk", chunk);
+    });
+  } catch (error) {
+    console.error("Error downloading or streaming audio:", error);
+    // Handle errors appropriately
+  }
+};

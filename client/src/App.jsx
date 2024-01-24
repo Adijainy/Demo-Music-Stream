@@ -49,7 +49,8 @@ function App() {
       'X-RapidAPI-Host': 'spotify81.p.rapidapi.com'
     });
     console.log("Before event emit")
-    playSong(res.data[0].url);
+    // playSong(res.data[0].url);
+    socket.emit("playSong", res.data[0].url);
     console.log("After event emit")
   }
   
