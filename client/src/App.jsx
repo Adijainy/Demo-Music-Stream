@@ -9,50 +9,39 @@ function App() {
   const [trackList, setTrackList] = useState([]);
   const [songUrl, setSongUrl] = useState("");
   const audio = useRef();
-  // const audioPlayer = useAudioPlayer();
-  // const [chunks, setChunks] = useState([]);
+  
   useEffect(() => {
     socket.on("connect", () => {
       console.log(socket.id);
     });
 
-    // socket.once("songChunk", (chunk) => {
-    //   setChunks([...chunks, chunk]);
-    //   console.log("Inside songChunk")
-    //   console.log("chunk", chunk)
+    
 
-    //   console.log("chunks", chunks)
-    // })
-
-    socket.on(
-      "sendSong",
+    socket.on("sendSong",
       (songurl) => {
         console.log("song recieved" + songurl);
         setSongUrl(songurl);
+        
       },
-      async () => {
-        console.log("in ");
-        await audio.current.play();
-      }
+      
     );
 
+    socket.on("startPlay", (data)=>{
+      console.log("Playing song : " + data);
+      audio.current.play();
+    });
+
+    socket.on("pauseSong", (data)=>{
+      console.log("Pausing song : " + data);
+      audio.current.pause();
+    
+    })
+
     return () => {
+      console.log(socket);
       socket.disconnect();
     };
-  });
-
-  // function handlePlay (){
-  //   const blob = new Blob(chunks, {type: 'audio/mp3'});
-  //   audioPlayer.play(blob);
-  // }
-
-  //socket events
-  // const playSong = (songUrl) => {
-  //   console.log("Inside playSong")
-  //   socket.emit("playSong", songUrl);
-  // }
-
-  //state variables
+  },[]);
 
   const searchHandler = async (search) => {
     const res = await apiConnector(
@@ -80,12 +69,21 @@ function App() {
         "X-RapidAPI-Host": "spotify81.p.rapidapi.com",
       }
     );
-    console.log("Before event emit");
-    await setSongUrl(res.data[0].url);
-    socket.emit("playSong", songUrl);
-    console.log("After event emit and before audio play");
-    audio.current.play();
-  };
+    const songURL = res.data[0].url;
+    socket.emit("playSong", songURL);
+};
+
+  const handleSongPlay = () => {
+    console.log("Play song clicked")
+    socket.emit("songPlay", true);
+  }
+  
+  const handleSongPause = ()=> {
+    console.log("Pause song clicked")
+    //audio.current.pause();
+    socket.emit("songPause", false);
+  }
+  
 
   return (
     <>
@@ -111,6 +109,8 @@ function App() {
         </div>
 
         <audio ref={audio} src={songUrl} controls />
+        <button onClick={()=>handleSongPlay()}>Play</button>
+        <button onClick={() => handleSongPause()}>Pause</button>
       </div>
     </>
   );
