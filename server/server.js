@@ -1,7 +1,5 @@
 const express = require("express");
-const { Transform } = require("stream");
 const axios = require("axios");
-const Lame = require("node-lame").Lame;
 
 const app = express();
 const CHUNK_SIZE = 1117096; // Adjust as needed
@@ -19,20 +17,20 @@ const io = require("socket.io")(server, {
 //socket connections
 io.on("connection", (socket) => {
   console.log("Client connected : " + socket.id);
-  socket.on('playSong', (songUrl) => {
+  socket.on("playSong", (songUrl) => {
     console.log("Playing song : " + songUrl);
-    //downloadAndEncode(songUrl);
-    downloadAndStream(songUrl);
+    io.emit("sendSong", songUrl);
+    console.log("Sent song : " + songUrl);
   });
 });
-
 
 const downloadAndEncode = async (url) => {
   try {
     const response = await axios.get(url, { responseType: "stream" });
     const readableStream = response.data;
-  
-    const encoder = new Lame({ // Encode input to MP3
+
+    const encoder = new Lame({
+      // Encode input to MP3
       bitDepth: 16, // Adjust encoding parameters as needed
       sampleRate: 44100,
       channels: 2,
@@ -54,8 +52,6 @@ const downloadAndEncode = async (url) => {
     // Handle errors appropriately
   }
 };
-
-
 
 const downloadAndStream = async (url) => {
   try {
@@ -80,7 +76,7 @@ const downloadAndStream = async (url) => {
     writableStream.on("data", (chunk) => {
       //const timestamp = audioContext.currentTime; // Assuming you have an AudioContext for synchronization
       //io.emitTo("lobby", "songChunk", chunk, timestamp);
-      io.emit('songChunk', chunk);
+      io.emit("songChunk", chunk);
       console.log("Sent chunk");
     });
   } catch (error) {
