@@ -4,7 +4,7 @@ const axios = require("axios");
 const Lame = require("node-lame").Lame;
 
 const app = express();
-const CHUNK_SIZE = 17096; // Adjust as needed
+const CHUNK_SIZE = 1117096; // Adjust as needed
 const server = require("http").createServer(app);
 server.listen(3000, () => {
   console.log("Server listening on port 3000");
@@ -80,8 +80,8 @@ const downloadAndStream = async (url) => {
     writableStream.on("data", (chunk) => {
       //const timestamp = audioContext.currentTime; // Assuming you have an AudioContext for synchronization
       //io.emitTo("lobby", "songChunk", chunk, timestamp);
-      //io.emit('songChunk', chunk);
-      console.log("Sent chunk", chunk);
+      io.emit('songChunk', chunk);
+      console.log("Sent chunk");
     });
   } catch (error) {
     console.error("Error downloading or streaming audio:", error);
