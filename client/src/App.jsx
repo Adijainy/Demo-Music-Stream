@@ -2,24 +2,41 @@ import "./App.css";
 import { io } from "socket.io-client";
 import { useMemo, useState, useEffect } from "react";
 import { apiConnector } from "./services/apiconnector";
+import {useAudioPlayer} from 'react-use-audio-player'
 function App() {
   const socket = useMemo(() => io("http://localhost:3000"), []);
-
+  const audioPlayer = useAudioPlayer();
+  const [chunks, setChunks] = useState([]);
   useEffect(() => {
     socket.on("connect", () => {
       console.log(socket.id);
     });
+
+    socket.once("songChunk", (chunk) => {
+      setChunks([...chunks, chunk]);
+      console.log("Inside songChunk")
+      console.log("chunk", chunk)
+      
+      console.log("chunks", chunks)
+    })
+
+    
 
     return () => {
       socket.disconnect();
     };
   });
 
-  //socket events
-  const playSong = (songUrl) => {
-    console.log("Inside playSong")
-    socket.emit("playSong", songUrl);
+  function handlePlay (){
+    const blob = new Blob(chunks, {type: 'audio/mp3'});
+    audioPlayer.play(blob);
   }
+
+  //socket events
+  // const playSong = (songUrl) => {
+  //   console.log("Inside playSong")
+  //   socket.emit("playSong", songUrl);
+  // }
 
   //state variables
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,6 +97,9 @@ function App() {
             ))}
           </ul>
         </div>
+
+
+        <button onClick={() => handlePlay()}>Play song</button>
       </div>
     </>
   );
